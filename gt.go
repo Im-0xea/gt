@@ -123,6 +123,7 @@ func main() {
 				return
 			case ' ':
 			case '\n':
+				cursor += 1
 				fmt.Printf(" ")
 				continue
 			case 127:
@@ -140,16 +141,18 @@ func main() {
 			fmt.Printf("\033[31m")
 		}
 		fmt.Printf("%c", rune(b[0]))
-		if cursor + 1 == len(lang[sentence[currentWord]]) {
-			cursor = -1
-			currentWord += 1
-			if currentWord == words {
-				fmt.Printf("\033[0m\033[2 q")
-				fmt.Printf("\nfinished\n")
-				return
+		if cursor != -1 {
+			if cursor + 1 == len(lang[sentence[currentWord]]) {
+				cursor = -1
+				currentWord += 1
+				if currentWord == words {
+					fmt.Printf("\033[0m\033[2 q")
+					fmt.Printf("\nfinished\n")
+					return
+				}
+			} else {
+					cursor += 1
 			}
-		} else {
-			cursor += 1
 		}
 	}
 }
