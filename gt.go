@@ -116,26 +116,29 @@ func main() {
 			fmt.Println("Error reading stdin:", err)
 			return
 		}
+		
 		if !started {
 			dt = time.Now()
 			started = true
 		}
+		
 		switch b[0] {
 			case 0x03:
 				fmt.Printf("\033[0m")
 				fmt.Printf("\033[2 q")
 				fmt.Println("\nReceived SIGINT. Exiting.")
 				return
+			case '\b':
 			case 127:
 				if cursor > -1 {
-					if cursor != 0 ||currentWord > 0 {
+					if cursor != 0 || currentWord > 0 {
 						cursor -= 1
 						typed -= 1
-						if cursor > -1 {
+						if cursor > -1 && cursor < len(lang[sentence[currentWord]]){
 							fmt.Printf("\033[0m")
 							fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
 						} else {
-							fmt.Printf("\033[D")
+							fmt.Printf("\b")
 						}
 					}
 				} else if currentWord > 0 {
@@ -145,22 +148,33 @@ func main() {
 					fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
 				}
 				continue
+			case ' ':
+			case '\n':
+			case '\t':
+				cursor += 1
+				typed += 1
+				fmt.Printf(" ")
+				continue
 		}
-		if b[0] == ' ' || b[0] == '\n' || b[0] == '\t' {
-			cursor += 1
-			typed += 1
-			fmt.Printf(" ")
-			continue
-		}
-		if cursor > -1 && b[0] == lang[sentence[currentWord]][cursor] {
+		if cursor > -1 && cursor < len(lang[sentence[currentWord]]) && b[0] == lang[sentence[currentWord]][cursor] {
 			fmt.Printf("\033[32m")
 		} else {
 			fmt.Printf("\033[31m")
 		}
+		if cursor + 1 > len(lang[sentence[currentWord]]) {
+			fmt.Printf("\033[0m")
+			back := 1
+			fmt.Printf(" ")
+			for i := 1; i < len(sentence); i++ {
+				fmt.Printf("%s ", lang[sentence[i]])
+				back += len(lang[sentence[i]]) + 1
+			}
+			fmt.Printf("\033[%dD", back)
+		}
 		fmt.Printf("%c", rune(b[0]))
 		if cursor > -1 {
-			if cursor + 1 == len(lang[sentence[currentWord]]) {
-				cursor = -1
+			if cursor + 1 > len(lang[sentence[currentWord]]) && b[0] == ' ' {
+				cursor = 0
 				currentWord += 1
 				if currentWord == words {
 					fmt.Printf("\033[0m\033[2 q")
