@@ -121,19 +121,19 @@ func main() {
 				fmt.Printf("\033[2 q")
 				fmt.Println("\nReceived SIGINT. Exiting.")
 				return
-			case ' ':
-			case '\n':
-				cursor += 1
-				fmt.Printf(" ")
-				continue
 			case 127:
-				if cursor != 0 {
+				if cursor > 0 {
 					cursor -= 1
+					fmt.Printf("\033[0m")
+					fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
+					fmt.Printf("\033[30m")
 				}
-				fmt.Printf("\033[0m")
-				fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
-				fmt.Printf("\033[30m")
 				continue
+		}
+		if b[0] == ' ' || b[0] == '\n' {
+			cursor += 1
+			fmt.Printf(" ")
+			continue
 		}
 		if cursor != -1 && b[0] == lang[sentence[currentWord]][cursor] {
 			fmt.Printf("\033[32m")
@@ -151,7 +151,7 @@ func main() {
 					return
 				}
 			} else {
-					cursor += 1
+				cursor += 1
 			}
 		}
 	}
