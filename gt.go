@@ -57,10 +57,12 @@ func main() {
 	var (
 		help	bool
 		version	bool
+		words	int
 	)
 	
-	flag.BoolVar(&help, "help", false, "print usage information")
-	flag.BoolVar(&version, "version", false, "print version information")
+	flag.BoolVar(&help,   	"help",   	false,	"print usage information")
+	flag.BoolVar(&version,	"version",	false,	"print version information")
+	flag.IntVar(&words,   	"words",  	15,   	"set amount of words")
 	
 	flag.Parse()
 	
@@ -80,8 +82,6 @@ func main() {
 	}
 	
 	rand.Seed(time.Now().UnixNano())
-	
-	words := 10
 	
 	sentence := make([]int, words)
 	
@@ -104,8 +104,11 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT)
 	
+	dt := time.Now()
+	started := false
 	cursor := 0
 	currentWord := 0
+	typed := 0
 	for {
 		var b [1]byte
 		_, err := os.Stdin.Read(b[:])
@@ -113,8 +116,10 @@ func main() {
 			fmt.Println("Error reading stdin:", err)
 			return
 		}
-		fmt.Printf("\033[30m")
-		
+		if !started {
+			dt = time.Now()
+			started = true
+		}
 		switch b[0] {
 			case 0x03:
 				fmt.Printf("\033[0m")
@@ -122,36 +127,54 @@ func main() {
 				fmt.Println("\nReceived SIGINT. Exiting.")
 				return
 			case 127:
-				if cursor > 0 {
-					cursor -= 1
+				if cursor > -1 {
+					if cursor != 0 ||currentWord > 0 {
+						cursor -= 1
+						typed -= 1
+						if cursor > -1 {
+							fmt.Printf("\033[0m")
+							fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
+						} else {
+							fmt.Printf("\033[D")
+						}
+					}
+				} else if currentWord > 0 {
+					currentWord -= 1
+					cursor = len(lang[sentence[currentWord]]) - 1
 					fmt.Printf("\033[0m")
 					fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
-					fmt.Printf("\033[30m")
 				}
 				continue
 		}
-		if b[0] == ' ' || b[0] == '\n' {
+		if b[0] == ' ' || b[0] == '\n' || b[0] == '\t' {
 			cursor += 1
+			typed += 1
 			fmt.Printf(" ")
 			continue
 		}
-		if cursor != -1 && b[0] == lang[sentence[currentWord]][cursor] {
+		if cursor > -1 && b[0] == lang[sentence[currentWord]][cursor] {
 			fmt.Printf("\033[32m")
 		} else {
 			fmt.Printf("\033[31m")
 		}
 		fmt.Printf("%c", rune(b[0]))
-		if cursor != -1 {
+		if cursor > -1 {
 			if cursor + 1 == len(lang[sentence[currentWord]]) {
 				cursor = -1
 				currentWord += 1
 				if currentWord == words {
 					fmt.Printf("\033[0m\033[2 q")
-					fmt.Printf("\nfinished\n")
+					end := time.Now()
+					diff := end.Sub(dt)
+					fmt.Printf("\n")
+					fmt.Printf("Time: %.1f\n", diff.Seconds())
+					fmt.Printf("Letters: %d\n", typed)
+					fmt.Printf("WPM: %.1f\n", 60 * (float64(typed) / 5)  / diff.Seconds())
 					return
 				}
 			} else {
 				cursor += 1
+				typed += 1
 			}
 		}
 	}
