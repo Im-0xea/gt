@@ -147,6 +147,15 @@ func main() {
 					fmt.Printf("\033[0m")
 					fmt.Printf("\b%c\033[D", lang[sentence[currentWord]][cursor])
 				}
+				if cursor + 1 > len(lang[sentence[currentWord]]) {
+					back := 1
+					fmt.Printf("\033[0m ")
+					for i := currentWord + 1; i < len(sentence); i++ {
+						fmt.Printf("%s ", lang[sentence[i]])
+						back += len(lang[sentence[i]]) + 1
+					}
+					fmt.Printf("\033[%dD", back)
+				}
 				continue
 			case ' ':
 			case '\n':
@@ -154,42 +163,45 @@ func main() {
 				cursor += 1
 				typed += 1
 				fmt.Printf(" ")
-				continue
-		}
-		if cursor > -1 && cursor < len(lang[sentence[currentWord]]) && b[0] == lang[sentence[currentWord]][cursor] {
-			fmt.Printf("\033[32m")
-		} else {
-			fmt.Printf("\033[31m")
-		}
-		if cursor + 1 > len(lang[sentence[currentWord]]) {
-			fmt.Printf("\033[0m")
-			back := 1
-			fmt.Printf(" ")
-			for i := 1; i < len(sentence); i++ {
-				fmt.Printf("%s ", lang[sentence[i]])
-				back += len(lang[sentence[i]]) + 1
-			}
-			fmt.Printf("\033[%dD", back)
-		}
-		fmt.Printf("%c", rune(b[0]))
-		if cursor > -1 {
-			if cursor + 1 > len(lang[sentence[currentWord]]) && b[0] == ' ' {
-				cursor = 0
-				currentWord += 1
-				if currentWord == words {
-					fmt.Printf("\033[0m\033[2 q")
-					end := time.Now()
-					diff := end.Sub(dt)
-					fmt.Printf("\n")
-					fmt.Printf("Time: %.1f\n", diff.Seconds())
-					fmt.Printf("Letters: %d\n", typed)
-					fmt.Printf("WPM: %.1f\n", 60 * (float64(typed) / 5)  / diff.Seconds())
-					return
+			default:
+				if cursor > -1 && cursor < len(lang[sentence[currentWord]]) && b[0] == lang[sentence[currentWord]][cursor] {
+					fmt.Printf("\033[32m")
+				} else {
+					fmt.Printf("\033[31m")
 				}
-			} else {
-				cursor += 1
-				typed += 1
-			}
+				if cursor + 1 > len(lang[sentence[currentWord]]) && b[0] != ' ' {
+					back := 1
+					cursor += 1
+					fmt.Printf("\033[31m")
+					fmt.Printf("%c ", rune(b[0]))
+					fmt.Printf("\033[0m")
+					for i := currentWord + 1; i < len(sentence); i++ {
+						fmt.Printf("%s ", lang[sentence[i]])
+						back += len(lang[sentence[i]]) + 1
+					}
+					fmt.Printf("\033[%dD", back)
+					continue
+				}
+				fmt.Printf("%c", rune(b[0]))
+				if cursor > -1 {
+					if cursor + 1 > len(lang[sentence[currentWord]]) && b[0] == ' ' {
+						cursor = 0
+						currentWord += 1
+						if currentWord == words {
+							fmt.Printf("\033[0m\033[2 q")
+							end := time.Now()
+							diff := end.Sub(dt)
+							fmt.Printf("\n")
+							fmt.Printf("Time: %.1f\n", diff.Seconds())
+							fmt.Printf("Letters: %d\n", typed)
+							fmt.Printf("WPM: %.1f\n", 60 * (float64(typed) / 5)  / diff.Seconds())
+							return
+						}
+					} else {
+						cursor += 1
+						typed += 1
+					}
+				}
 		}
 	}
 }
